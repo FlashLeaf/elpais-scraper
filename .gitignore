@@ -1,0 +1,24 @@
+# Secrets — never commit your real credentials
+.env
+
+# Downloaded images (can be large)
+images/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
