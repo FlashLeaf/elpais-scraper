@@ -1,11 +1,6 @@
-# El País Opinion Scraper
+# El País Opinion Scraper 🗞️
 
-A Python + Selenium web scraper that:
-1. Visits [El País](https://elpais.com/opinion/) in Spanish
-2. Scrapes the **first 5 Opinion articles** (title, content, cover image)
-3. **Translates** article titles from Spanish → English via MyMemory API
-4. **Analyses** word frequency in translated titles (words appearing > 2 times)
-5. Runs in **5 parallel threads** on BrowserStack (3 desktop + 2 mobile)
+A Selenium-based web scraper that extracts articles from [El País Opinion](https://elpais.com/opinion/), translates their titles to English, and analyses word frequency — running in parallel across **5 browser/device combinations** on BrowserStack.
 
 ---
 
@@ -13,81 +8,79 @@ A Python + Selenium web scraper that:
 
 ```
 elpais-scraper/
-├── scraper.py               # Core scraping logic
-├── translator.py            # MyMemory / Google Translate helper
-├── analyzer.py              # Word-frequency analysis
-├── browserstack_local.py    # Local run entry point
-├── browserstack_runner.py   # BrowserStack parallel run (5 threads)
+├── src/
+│   ├── scraper.py          # ElPaisScraper class
+│   ├── translator.py       # ArticleTranslator class (MyMemory API)
+│   └── analyzer.py         # WordAnalyzer class
+├── config.py               # All settings in one place
+├── main.py                 # Local run entry point
+├── browserstack_runner.py  # BrowserStack parallel runner (5 threads)
 ├── requirements.txt
-├── .env                     # Your credentials (do not commit!)
-├── .env.example             # Template
-└── images/                  # Downloaded cover images (auto-created)
+├── .env                    # BrowserStack credentials (git-ignored)
+└── .env.example
 ```
+
+---
+
+## How It Works
+
+### 1 · Scrape (`ElPaisScraper`)
+- Navigates to `elpais.com/opinion/` with the browser set to **Spanish locale**
+- Handles the GDPR consent banner automatically
+- Filters article URLs using a date-regex (`/YYYY-MM-DD/`) to avoid scraping section indexes
+- Extracts **title**, **content snippet**, and **cover image** for each of the first 5 articles
+
+### 2 · Translate (`ArticleTranslator`)
+- Calls the **free MyMemory REST API** (no key required) to translate ES → EN
+- Retries up to 3 times on failure; falls back to original text
+
+### 3 · Analyse (`WordAnalyzer`)
+- Tokenises all translated titles and counts word frequencies
+- Reports words appearing **more than twice**
+
+### 4 · BrowserStack Parallel Run (`browserstack_runner.py`)
+- Spawns **5 threads** simultaneously, one per browser/device:
+
+| # | Browser | OS / Device |
+|---|---------|------------|
+| 1 | Chrome latest | Windows 11 |
+| 2 | Firefox latest | Windows 10 |
+| 3 | Safari latest | macOS Ventura |
+| 4 | Chrome | Samsung Galaxy S23 (real device) |
+| 5 | Safari | iPhone 14 (real device) |
+
+- Each session is marked **passed/failed** in the BrowserStack Automate dashboard
 
 ---
 
 ## Setup
 
-### 1. Install Dependencies
-```powershell
+```bash
+# 1. Clone and install dependencies
 pip install -r requirements.txt
+
+# 2. Copy credentials template
+cp .env.example .env
+# Fill in BROWSERSTACK_USERNAME and BROWSERSTACK_ACCESS_KEY
 ```
 
-### 2. Configure Environment
-Copy `.env.example` to `.env` (already done) and ensure credentials are filled in:
-```
-BROWSERSTACK_USERNAME=nayanpaleja_TcfLVm
-BROWSERSTACK_ACCESS_KEY=zVftqsPjyf83o9RZ43Gq
-```
+## Running
 
-### 3. Install ChromeDriver
-Selenium 4.18+ auto-manages ChromeDriver via Selenium Manager — no manual install needed.
+```bash
+# Local Chrome run
+python main.py
 
----
-
-## Running Locally
-
-```powershell
-python browserstack_local.py
-```
-
-**Expected output:**
-- 5 article titles + content snippets (in Spanish)
-- 5 translated English titles
-- Word-frequency table (words appearing > 2 times)
-- Cover images saved to `images/`
-
----
-
-## Running on BrowserStack (5 Parallel Threads)
-
-```powershell
+# BrowserStack parallel run (5 browsers at once)
 python browserstack_runner.py
 ```
 
-**Browser/Device matrix:**
-
-| # | Configuration | Type |
-|---|--------------|------|
-| 1 | Chrome latest / Windows 11 | Desktop |
-| 2 | Firefox latest / Windows 10 | Desktop |
-| 3 | Safari latest / macOS Ventura | Desktop |
-| 4 | Samsung Galaxy S23 / Chrome | Mobile Android |
-| 5 | iPhone 14 / Safari | Mobile iOS |
-
-Sessions are visible in your [BrowserStack Automate dashboard](https://automate.browserstack.com/).
-
 ---
 
-## Translation API
+## Dependencies
 
-Uses the **free [MyMemory API](https://mymemory.translated.net/)** — no key required.  
-To use Google Cloud Translation instead, set `GOOGLE_API_KEY` in `.env`.
-
----
-
-## Notes
-
-- El País may show a GDPR consent banner — the scraper handles it automatically.
-- Cover images are saved to `images/article_N_cover.jpg`.
-- BrowserStack sessions are automatically marked **passed** or **failed**.
+| Package | Version | Purpose |
+|---------|---------|---------|
+| selenium | 4.18+ | Browser automation |
+| requests | 2.31+ | API calls + image downloads |
+| Pillow | 10.0+ | Image handling |
+| python-dotenv | 1.0+ | Load `.env` credentials |
